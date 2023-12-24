@@ -4,6 +4,10 @@
 
 *This is fork of a deprecated repo https://github.com/TorstenDittmann/appwrite-types-generator upgraded.*
 
+![code](https://github.com/orenaksakal/appwrite-typer/assets/199699/8e5c3d06-d2a5-477b-b77a-37fa9492b25d)
+
+
+
 ## Install
 
 ```sh
