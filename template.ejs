@@ -1,8 +1,5 @@
-
 export interface <%= getTypeFormatted(name) %> extends Models.Document {
 <%_ attributes.forEach(attribute => { -%>
-    <%= attribute.name _%>
-    <%_ if (!attribute.required) { -%>?<% } -%>: <%_ if (attribute.relation) { -%> <%- getTypeFormatted(attribute.relation) ?? 'unknown' -%> <%_ if (attribute.relationType === 'oneToMany') {-%>[]<%} -%> <%_ } -%><% if (!attribute.relation) { -%> <%- getType(attribute.type) ?? 'unknown' -%> <%_ } -%>
-    <%_ if (attribute.array) { -%>[]<% } -%>;
-<% }); -%>
+    <%= attribute.name _%><%_ if (!attribute.required) { -%>?<%_ } -%>: <% if (attribute.relation) { -%><%- getRelationshipType(attribute) _%><%_ } else { -%><%- getType(attribute.type) ?? 'unknown' _%><%_ } _%><%_ if (attribute.array) { -%>[]<%_ } _%>;
+<%_ }); -%>
 };
