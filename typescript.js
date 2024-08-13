@@ -25,11 +25,30 @@ export class Typescript {
         return "Date";
       case AttributeTypes.RELATIONSHIP:
         return type;
+      default:
+        return "unknown";
     }
   }
 
   static getTypeFormatted(name) {
     return camelcase(name, { pascalCase: true });
+  }
+
+  static getRelationshipType(attribute) {
+    if (!attribute.relation) return 'unknown';
+    
+    const baseType = Typescript.getTypeFormatted(attribute.relation);
+    
+    switch (attribute.relationType) {
+      case 'oneToOne':
+      case 'manyToOne':
+        return baseType;
+      case 'oneToMany':
+      case 'manyToMany':
+        return `${baseType}[]`;
+      default:
+        return 'unknown';
+    }
   }
 
   getTypeDefault(attribute) {

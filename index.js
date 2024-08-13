@@ -2,7 +2,7 @@
 
 import yargs from "yargs";
 import path, { dirname } from "path";
-import sdk from "node-appwrite";
+import { Client, Databases } from "node-appwrite";
 import { hideBin } from "yargs/helpers";
 import { mkdir, readFile, appendFile, writeFile } from "fs/promises";
 import { existsSync } from "fs";
@@ -11,15 +11,12 @@ import { Typescript } from "./typescript.js";
 import { renderFile } from "ejs";
 import { fileURLToPath } from "url";
 
-const client = new sdk.Client();
-const database = new sdk.Databases(client);
-
 /**
- * Load configuration for Appwrite.
+ * Load configuration for Appwrite and initialize client and database.
  * @param {string} file
- * @returns {Promise<object>}
+ * @returns {Promise<{config: object, client: Client, database: Databases}>}
  */
-const loadConfiguration = async (file) => {
+const loadConfigurationAndInitialize = async (file) => {
   try {
     if (!existsSync(file)) {
       onError("Configuration not found.");
@@ -28,19 +25,22 @@ const loadConfiguration = async (file) => {
     const data = await readFile(file, "utf8");
     const config = JSON.parse(data);
 
+    const client = new Client();
     client
       .setEndpoint(config.endpoint)
       .setProject(config.projectId)
       .setKey(config.apiKey);
 
-    return config;
+    const database = new Databases(client);
+
+    return { config, client, database };
   } catch (err) {
     onError(err.message);
   }
 };
 
 const generate = async ({ output, config, language }) => {
-  const configVariables = await loadConfiguration(config);
+  const { config: configVariables, database } = await loadConfigurationAndInitialize(config);
   const lang = new Typescript();
 
   /** @type {Array<object>} collections*/
@@ -52,8 +52,8 @@ const generate = async ({ output, config, language }) => {
     await mkdir(output, { recursive: true });
   }
 
-  const destination = path.join(output, `./appwrite${lang.getFileExtension()}`);
-  const imp = 'import type { Models } from "appwrite";\n';
+  const destination = path.join(output, `appwrite${lang.getFileExtension()}`);
+  const imp = 'import type { Models } from "appwrite";\n\n';
 
   await writeFile(destination, imp);
 
@@ -68,11 +68,12 @@ const generate = async ({ output, config, language }) => {
           ...type,
           getType: Typescript.getType,
           getTypeFormatted: Typescript.getTypeFormatted,
+          getRelationshipType: Typescript.getRelationshipType
         }
       );
 
-      await appendFile(destination, content + "\n");
-      console.log(`Generated ${destination}`);
+      await appendFile(destination, content + "\n\n");
+      console.log(`Generated ${destination} for ${type.name}`);
     } catch (err) {
       console.error(err.message);
     }
