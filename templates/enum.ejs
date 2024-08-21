@@ -1,0 +1,7 @@
+export const <%= enumFormatted %> = {
+    <%_ elements.forEach(element => { -%>
+    '<%= element _%>': '<%= element _%>',
+    <%_ }); -%>
+} as const;
+  
+export type <%= enumFormatted %> = (typeof <%= enumFormatted %>)[keyof typeof <%= enumFormatted %>];

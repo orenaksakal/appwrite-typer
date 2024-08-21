@@ -9,67 +9,65 @@ const AttributeTypes = {
   RELATIONSHIP: "relationship",
 };
 
+const FormatTypes = {
+  ENUM: "enum",
+  EMAIL: "email",
+  URL: "url",
+};
+
 export class Typescript {
-  static getType(type) {
-    console.log({ type });
-    switch (type) {
-      case AttributeTypes.STRING:
-        return "string";
-      case AttributeTypes.INTEGER:
-        return "number";
-      case AttributeTypes.DOUBLE:
-        return "number";
-      case AttributeTypes.BOOLEAN:
-        return "boolean";
-      case AttributeTypes.DATETIME:
-        return "Date";
-      case AttributeTypes.RELATIONSHIP:
-        return type;
+  static getCamelCase(input) {
+    return camelcase(input, { pascalCase: true });
+  }
+
+  static getType(attribute) {
+    const getPrimitive = (type) => {
+      switch (type) {
+        case AttributeTypes.STRING:
+          return "string";
+        case AttributeTypes.INTEGER:
+          return "number";
+        case AttributeTypes.DOUBLE:
+          return "number";
+        case AttributeTypes.BOOLEAN:
+          return "boolean";
+        case AttributeTypes.DATETIME:
+          return "Date";
+        default:
+          return "unknown";
+      }
+    };
+
+    switch (attribute.format) {
+      case FormatTypes.ENUM:
+        return Typescript.getEnumFormatted(attribute);
       default:
-        return "unknown";
+        return getPrimitive(attribute.type);
     }
   }
 
-  static getTypeFormatted(name) {
-    return camelcase(name, { pascalCase: true });
+  static getEnumFormatted({ collection, name }) {
+    return Typescript.getCamelCase(collection) + Typescript.getCamelCase(name);
+  }
+
+  static getTypeFormatted({ name }) {
+    return Typescript.getCamelCase(name);
   }
 
   static getRelationshipType(attribute) {
-    if (!attribute.relation) return 'unknown';
-    
-    const baseType = Typescript.getTypeFormatted(attribute.relation);
-    
+    if (!attribute.relation) return "unknown";
+
+    const baseType = Typescript.getCamelCase(attribute.relation);
+
     switch (attribute.relationType) {
-      case 'oneToOne':
-      case 'manyToOne':
+      case "oneToOne":
+      case "manyToOne":
         return baseType;
-      case 'oneToMany':
-      case 'manyToMany':
+      case "oneToMany":
+      case "manyToMany":
         return `${baseType}[]`;
       default:
-        return 'unknown';
-    }
-  }
-
-  getTypeDefault(attribute) {
-    if (!attribute.required) {
-      return "null";
-    }
-    if (attribute.array) {
-      return "[]";
-    }
-
-    switch (attribute.type) {
-      case AttributeTypes.STRING:
-        return "string";
-      case AttributeTypes.INTEGER:
-        return "number";
-      case AttributeTypes.DOUBLE:
-        return "number";
-      case AttributeTypes.BOOLEAN:
-        return "boolean";
-      case AttributeTypes.DATETIME:
-        return "Date";
+        return "unknown";
     }
   }
 
