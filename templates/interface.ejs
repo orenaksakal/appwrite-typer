@@ -1,0 +1,5 @@
+export interface <%= typeFormatted %> extends Partial<Models.Document> {
+<%_ attributes.forEach(attribute => { -%>
+    <%= attribute.name _%><%_ if (!attribute.required) { -%>?<%_ } -%>: <% if (attribute.relation) { -%><%- getRelationshipType(attribute) _%><%_ } else { -%><%- getType(attribute) ?? 'unknown' _%><%_ } _%><%_ if (attribute.array) { -%>[]<%_ } _%>;
+<%_ }); -%>
+};

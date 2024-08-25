@@ -40,12 +40,16 @@ const loadConfigurationAndInitialize = async (file) => {
 };
 
 const generate = async ({ output, config, language }) => {
-  const { config: configVariables, database } = await loadConfigurationAndInitialize(config);
+  const { config: configVariables, database } =
+    await loadConfigurationAndInitialize(config);
+
   const lang = new Typescript();
 
   /** @type {Array<object>} collections*/
-  const collections = (await database.listCollections(configVariables.databaseId))
-    .collections;
+  const collections = (
+    await database.listCollections(configVariables.databaseId)
+  ).collections;
+
   const types = buildCollectionTypes(collections);
 
   if (!existsSync(output)) {
@@ -57,25 +61,45 @@ const generate = async ({ output, config, language }) => {
 
   await writeFile(destination, imp);
 
+  const enums = types.reduce((acc, type) => {
+    const enums = type.attributes.filter((attr) => attr.format === "enum");
+    return [...acc, ...enums];
+  }, []);
+
+  for (const element of enums) {
+    try {
+      const content = await renderFile(
+        path.join(
+          fileURLToPath(dirname(import.meta.url)),
+          `./templates/enum.ejs`
+        ),
+        { ...element, enumFormatted: Typescript.getEnumFormatted(element) }
+      );
+      await appendFile(destination, content + "\n\n");
+      console.log(`Generated enum ${destination} for ${element.name}`);
+    } catch (err) {
+      console.error("error", err.message);
+    }
+  }
+
   for (const type of types) {
     try {
       const content = await renderFile(
         path.join(
           fileURLToPath(dirname(import.meta.url)),
-          `./template.ejs`
+          `./templates/interface.ejs`
         ),
         {
           ...type,
+          typeFormatted: Typescript.getTypeFormatted(type),
+          getRelationshipType: Typescript.getRelationshipType,
           getType: Typescript.getType,
-          getTypeFormatted: Typescript.getTypeFormatted,
-          getRelationshipType: Typescript.getRelationshipType
         }
       );
-
       await appendFile(destination, content + "\n\n");
-      console.log(`Generated ${destination} for ${type.name}`);
+      console.log(`Generated interface ${destination} for ${type.name}`);
     } catch (err) {
-      console.error(err.message);
+      console.error("error", err.message);
     }
   }
 };
@@ -97,8 +121,11 @@ const buildCollectionTypes = (collections) => {
             array: rule.array,
             required: rule.required,
             relationType: rule.relationType,
+            collection: collection.name,
+            elements: rule.elements,
+            format: rule.format,
             relation: isRelation
-              ? Typescript.getTypeFormatted(isRelation?.name)
+              ? Typescript.getCamelCase(isRelation?.name)
               : null,
           };
         })
